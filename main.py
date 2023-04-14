@@ -3,7 +3,7 @@ import discord
 
 from src.discordBot import DiscordClient, Sender
 from src.logger import logger
-from src.chatgpt import ChatGPT, DALLE
+from src.chatgpt import ChatGPT
 from src.models import OpenAIModel
 from src.memory import Memory
 
@@ -58,9 +58,7 @@ async def on_interaction(interaction):
         receive = chatgpt.get_response(user_id, interaction.data['options'][0]['value'])
         await sender.send_message(interaction, interaction.data['options'][0]['value'], receive)
 
-    if interaction.data['name'] == 'imagine':
-        image_url = dalle.generate(interaction.data['options'][0]['value'])
-        await sender.send_image(interaction, interaction.data['options'][0]['value'], image_url)
+    
 
     if interaction.data['name'] == 'reset':
         user_id = interaction.user.id
