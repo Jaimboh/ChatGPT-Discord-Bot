@@ -1,7 +1,7 @@
 import os
 import logging
 import logging.handlers
-
+import boto3
 
 class CustomFormatter(logging.Formatter):
     __LEVEL_COLORS = [
@@ -50,17 +50,27 @@ class LoggerFactory:
         return logger
 
 
-class FileHandler(logging.FileHandler):
-    def __init__(self, log_file):
-        os.makedirs(os.path.dirname(log_file), exist_ok=True)
-        super().__init__(log_file)
+class S3FileHandler(logging.FileHandler):
+    def __init__(self, bucket_name, key):
+        self.bucket_name = bucket_name
+        self.key = key
+        super().__init__(self.get_file_path())
+
+    def get_file_path(self):
+        if not os.path.exists('/tmp/logs'):
+            os.makedirs('/tmp/logs')
+        return '/tmp/logs/' + self.key
+
+    def emit(self, record):
+        super().emit(record)
+        s3 = boto3.client('s3')
+        with open(self.get_file_path(), 'rb') as f:
+            s3.upload_fileobj(f, self.bucket_name, self.key)
 
 
-class ConsoleHandler(logging.StreamHandler):
-    pass
-
+# create S3FileHandler instead of FileHandler
+file_handler = S3FileHandler('discordbot', 'my_logs.csv')
+console_handler = logging.StreamHandler()
 
 formatter = CustomFormatter()
-file_handler = FileHandler('./tmp/logs')
-console_handler = ConsoleHandler()
 logger = LoggerFactory.create_logger(formatter, [file_handler, console_handler])
