@@ -1,7 +1,4 @@
-
 import os
-
-from dotenv import load_dotenv
 import discord
 
 from src.discordBot import DiscordClient, Sender
@@ -9,53 +6,73 @@ from src.logger import logger
 from src.chatgpt import ChatGPT, DALLE
 from src.models import OpenAIModel
 from src.memory import Memory
-from src.server import keep_alive
 
-load_dotenv()
 
-models = OpenAIModel(api_key=os.getenv('OPENAI_API'), model_engine=os.getenv('OPENAI_MODEL_ENGINE'))
+DISCORD_TOKEN = os.environ['DISCORD_TOKEN']
+OPENAI_API = os.environ['OPENAI_API']
+OPENAI_MODEL_ENGINE = os.environ['OPENAI_MODEL_ENGINE']
+SYSTEM_MESSAGE = os.environ['SYSTEM_MESSAGE']
 
-memory = Memory(system_message=os.getenv('SYSTEM_MESSAGE'))
+
+models = OpenAIModel(api_key=OPENAI_API, model_engine=OPENAI_MODEL_ENGINE)
+memory = Memory(system_message=SYSTEM_MESSAGE)
 chatgpt = ChatGPT(models, memory)
 dalle = DALLE(models)
 
 
-def run():
-    client = DiscordClient()
-    sender = Sender()
+intents = discord.Intents.default()
+intents.members = True
+client = discord.Client(intents=intents)
 
-    @client.tree.command(name="chat", description="Have a chat with ChatGPT")
-    async def chat(interaction: discord.Interaction, *, message: str):
+
+sender = Sender()
+
+
+@client.event
+async def on_ready():
+    logger.info(f'Logged in as {client.user.name} - {client.user.id}')
+
+
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+
+    if message.content.startswith('!chat'):
+        user_id = message.author.id
+        receive = chatgpt.get_response(user_id, message.content[5:])
+        await sender.send_message(message, message.content, receive)
+
+    if message.content.startswith('!imagine'):
+        image_url = dalle.generate(message.content[8:])
+        await sender.send_image(message, message.content[8:], image_url)
+
+
+@client.event
+async def on_interaction(interaction):
+    if interaction.author == client.user:
+        return
+
+    if interaction.data['name'] == 'chat':
         user_id = interaction.user.id
-        if interaction.user == client.user:
-            return
-        await interaction.response.defer()
-        receive = chatgpt.get_response(user_id, message)
-        await sender.send_message(interaction, message, receive)
+        receive = chatgpt.get_response(user_id, interaction.data['options'][0]['value'])
+        await sender.send_message(interaction, interaction.data['options'][0]['value'], receive)
 
-    @client.tree.command(name="imagine", description="Generate image from text")
-    async def imagine(interaction: discord.Interaction, *, prompt: str):
-        if interaction.user == client.user:
-            return
-        await interaction.response.defer()
-        image_url = dalle.generate(prompt)
-        await sender.send_image(interaction, prompt, image_url)
+    if interaction.data['name'] == 'imagine':
+        image_url = dalle.generate(interaction.data['options'][0]['value'])
+        await sender.send_image(interaction, interaction.data['options'][0]['value'], image_url)
 
-    @client.tree.command(name="reset", description="Reset ChatGPT conversation history")
-    async def reset(interaction: discord.Interaction):
+    if interaction.data['name'] == 'reset':
         user_id = interaction.user.id
         logger.info(f"resetting memory from {user_id}")
         try:
             chatgpt.clean_history(user_id)
-            await interaction.response.defer(ephemeral=True)
-            await interaction.followup.send(f'> Reset ChatGPT conversation history < - <@{user_id}>')
+            await interaction.response.send_message(f'> Reset chatGPT conversation history < - <@{user_id}>', ephemeral=True)
         except Exception as e:
             logger.error(f"Error resetting memory: {e}")
-            await interaction.followup.send('> Oops! Something went wrong. <')
-
-    client.run(os.getenv('DISCORD_TOKEN'))
+            await interaction.response.send_message('> Oops! Something went wrong. <', ephemeral=True)
 
 
-if __name__ == '__main__':
-    keep_alive()
-    run()
+def lambda_handler(event, context):
+    client.run(DISCORD_TOKEN)
+
