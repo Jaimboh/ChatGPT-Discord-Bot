@@ -17,7 +17,6 @@ SYSTEM_MESSAGE = os.environ['SYSTEM_MESSAGE']
 models = OpenAIModel(api_key=OPENAI_API, model_engine=OPENAI_MODEL_ENGINE)
 memory = Memory(system_message=SYSTEM_MESSAGE)
 chatgpt = ChatGPT(models, memory)
-dalle = DALLE(models)
 
 
 intents = discord.Intents.default()
@@ -43,10 +42,6 @@ async def on_message(message):
         receive = chatgpt.get_response(user_id, message.content[5:])
         await sender.send_message(message, message.content, receive)
 
-    if message.content.startswith('!imagine'):
-        image_url = dalle.generate(message.content[8:])
-        await sender.send_image(message, message.content[8:], image_url)
-
 
 @client.event
 async def on_interaction(interaction):
@@ -57,8 +52,6 @@ async def on_interaction(interaction):
         user_id = interaction.user.id
         receive = chatgpt.get_response(user_id, interaction.data['options'][0]['value'])
         await sender.send_message(interaction, interaction.data['options'][0]['value'], receive)
-
-    
 
     if interaction.data['name'] == 'reset':
         user_id = interaction.user.id
@@ -73,4 +66,5 @@ async def on_interaction(interaction):
 
 def lambda_handler(event, context):
     client.run(DISCORD_TOKEN)
+
 
