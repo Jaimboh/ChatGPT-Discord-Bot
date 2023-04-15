@@ -53,7 +53,7 @@ class LoggerFactory:
 class S3FileHandler(logging.FileHandler):
     def __init__(self, bucket_name, key):
         self.bucket_name = bucket_name
-        self.key = key
+        self.key = key.rstrip('/')  # Remove trailing slash from key
         super().__init__(self.get_file_path())
 
     def get_file_path(self):
@@ -74,3 +74,4 @@ console_handler = logging.StreamHandler()
 
 formatter = CustomFormatter()
 logger = LoggerFactory.create_logger(formatter, [file_handler, console_handler])
+
