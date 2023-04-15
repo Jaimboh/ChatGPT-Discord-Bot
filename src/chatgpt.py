@@ -1,7 +1,6 @@
 from src.models import ModelInterface
 from src.memory import MemoryInterface
 
-
 class ChatGPT:
     def __init__(self, model: ModelInterface, memory: MemoryInterface):
         self.model = model
@@ -18,10 +17,3 @@ class ChatGPT:
     def clean_history(self, user_id: str) -> None:
         self.memory.remove(user_id)
 
-
-class DALLE:
-    def __init__(self, model: ModelInterface):
-        self.model = model
-
-    def generate(self, text: str) -> str:
-        return self.model.image_generation(text)
