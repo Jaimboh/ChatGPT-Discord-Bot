@@ -65,6 +65,8 @@ async def on_interaction(interaction):
 
 
 def lambda_handler(event, context):
+    print("SYSTEM_MESSAGE: ", SYSTEM_MESSAGE)
     client.run(DISCORD_TOKEN)
+
 
 
