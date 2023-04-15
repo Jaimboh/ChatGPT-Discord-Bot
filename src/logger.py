@@ -69,7 +69,7 @@ class S3FileHandler(logging.FileHandler):
 
 
 # create S3FileHandler instead of FileHandler
-file_handler = S3FileHandler('discordbot', 'my_logs.csv')
+file_handler = S3FileHandler('dicordbot', 'my_logs.csv')
 console_handler = logging.StreamHandler()
 
 formatter = CustomFormatter()
