@@ -69,7 +69,7 @@ class S3FileHandler(logging.FileHandler):
 
 
 # create S3FileHandler instead of FileHandler
-file_handler = S3FileHandler('dicordbot', 'Discord-bot-log-folder/')
+file_handler = S3FileHandler('dicordbot', 'Discord-bot-log-folder')
 console_handler = logging.StreamHandler()
 
 formatter = CustomFormatter()
